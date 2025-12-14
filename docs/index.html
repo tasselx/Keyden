@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyden - Elegant TOTP Authenticator for macOS</title>
+    <meta name="description" content="A clean and elegant macOS menu bar TOTP authenticator. Secure, fast, and beautiful.">
+    <meta name="keywords" content="TOTP, 2FA, authenticator, macOS, menu bar, security">
+    <meta property="og:title" content="Keyden - Elegant TOTP Authenticator for macOS">
+    <meta property="og:description" content="A clean and elegant macOS menu bar TOTP authenticator.">
+    <meta property="og:type" content="website">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-orange: #f59e0b;
+            --accent-cyan: #06b6d4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+            z-index: -1;
+            animation: gradientMove 20s ease-in-out infinite;
+        }
+
+        @keyframes gradientMove {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            background: rgba(15, 15, 26, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .lang-switch {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .lang-switch:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.6s ease-out 0.1s both;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .hero-image {
+            margin-top: 4rem;
+            animation: fadeInUp 0.6s ease-out 0.4s both;
+        }
+
+        .app-preview {
+            max-width: 400px;
+            border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .app-preview-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .app-preview-title {
+            font-weight: 600;
+        }
+
+        .token-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            transition: background 0.3s;
+        }
+
+        .token-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .token-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .token-issuer {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .token-account {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .token-code {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent-green);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-icon.green { background: rgba(16, 185, 129, 0.15); }
+        .feature-icon.blue { background: rgba(59, 130, 246, 0.15); }
+        .feature-icon.purple { background: rgba(139, 92, 246, 0.15); }
+        .feature-icon.pink { background: rgba(236, 72, 153, 0.15); }
+        .feature-icon.orange { background: rgba(245, 158, 11, 0.15); }
+        .feature-icon.cyan { background: rgba(6, 182, 212, 0.15); }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        /* Download Section */
+        .download {
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .download-card {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 3rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+        }
+
+        .download-card h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .download-card p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .system-req {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .system-req-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .footer-copy {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            .nav-links a:not(.lang-switch) {
+                display: none;
+            }
+
+            .hero {
+                padding: 6rem 1.5rem 3rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .btn {
+                justify-content: center;
+            }
+
+            .features {
+                padding: 4rem 1.5rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .download {
+                padding: 4rem 1.5rem;
+            }
+
+            .download-card {
+                padding: 2rem;
+            }
+
+            .system-req {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Language visibility */
+        .lang-en, .lang-zh { display: none; }
+        html[lang="en"] .lang-en { display: block; }
+        html[lang="en"] span.lang-en { display: inline; }
+        html[lang="zh"] .lang-zh { display: block; }
+        html[lang="zh"] span.lang-zh { display: inline; }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav>
+        <div class="logo">Keyden</div>
+        <div class="nav-links">
+            <a href="#features" class="lang-en">Features</a>
+            <a href="#features" class="lang-zh">功能特性</a>
+            <a href="#download" class="lang-en">Download</a>
+            <a href="#download" class="lang-zh">下载</a>
+            <a href="https://github.com/tasselx/Keyden" target="_blank">GitHub</a>
+            <button class="lang-switch" onclick="toggleLang()">
+                <span class="lang-en">中文</span>
+                <span class="lang-zh">EN</span>
+            </button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">
+            <span>✨</span>
+            <span class="lang-en">Open Source & Free</span>
+            <span class="lang-zh">开源免费</span>
+        </div>
+        <h1>
+            <span class="lang-en"><span>Elegant</span> TOTP<br>Authenticator</span>
+            <span class="lang-zh"><span>简洁优雅</span>的<br>TOTP 认证器</span>
+        </h1>
+        <p class="lang-en">
+            A clean and beautiful macOS menu bar two-factor authenticator. 
+            Secure, fast, and always at your fingertips.
+        </p>
+        <p class="lang-zh">
+            简洁美观的 macOS 菜单栏双因素认证器。
+            安全、快速，触手可及。
+        </p>
+        <div class="hero-buttons">
+            <a href="https://github.com/tasselx/Keyden/releases" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="lang-en">Download for macOS</span>
+                <span class="lang-zh">下载 macOS 版</span>
+            </a>
+            <a href="https://github.com/tasselx/Keyden" class="btn btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span class="lang-en">View on GitHub</span>
+                <span class="lang-zh">在 GitHub 上查看</span>
+            </a>
+        </div>
+
+        <div class="hero-image">
+            <div class="app-preview">
+                <div class="app-preview-header">
+                    <div class="app-icon">🔐</div>
+                    <span class="app-preview-title">Keyden</span>
+                </div>
+                <div class="token-item">
+                    <div class="token-info">
+                        <span class="token-issuer">GitHub</span>
+                        <span class="token-account">user@example.com</span>
+                    </div>
+                    <span class="token-code">384 291</span>
+                </div>
+                <div class="token-item">
+                    <div class="token-info">
+                        <span class="token-issuer">Google</span>
+                        <span class="token-account">myaccount@gmail.com</span>
+                    </div>
+                    <span class="token-code">847 562</span>
+                </div>
+                <div class="token-item">
+                    <div class="token-info">
+                        <span class="token-issuer">AWS</span>
+                        <span class="token-account">admin</span>
+                    </div>
+                    <span class="token-code">129 405</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>
+                <span class="lang-en">Features</span>
+                <span class="lang-zh">功能特性</span>
+            </h2>
+            <p>
+                <span class="lang-en">Everything you need for secure two-factor authentication</span>
+                <span class="lang-zh">安全双因素认证所需的一切</span>
+            </p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon green">🔐</div>
+                <h3>
+                    <span class="lang-en">Secure Storage</span>
+                    <span class="lang-zh">安全存储</span>
+                </h3>
+                <p>
+                    <span class="lang-en">TOTP secrets are securely stored in macOS Keychain, protected by your system's encryption.</span>
+                    <span class="lang-zh">TOTP 密钥安全存储在 macOS 钥匙串中，受系统加密保护。</span>
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon blue">📋</div>
+                <h3>
+                    <span class="lang-en">One-Click Copy</span>
+                    <span class="lang-zh">一键复制</span>
+                </h3>
+                <p>
+                    <span class="lang-en">Simply click on any code to copy it to your clipboard. Fast and effortless.</span>
+                    <span class="lang-zh">点击任意验证码即可复制到剪贴板，快速便捷。</span>
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon purple">📷</div>
+                <h3>
+                    <span class="lang-en">QR Code Scanning</span>
+                    <span class="lang-zh">二维码扫描</span>
+                </h3>
+                <p>
+                    <span class="lang-en">Scan QR codes directly from your screen to add new accounts instantly.</span>
+                    <span class="lang-zh">直接扫描屏幕上的二维码，即时添加新账户。</span>
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon pink">☁️</div>
+                <h3>
+                    <span class="lang-en">Gist Sync</span>
+                    <span class="lang-zh">Gist 同步</span>
+                </h3>
+                <p>
+                    <span class="lang-en">Optionally sync your tokens across devices using GitHub Gist with end-to-end encryption.</span>
+                    <span class="lang-zh">可选通过 GitHub Gist 同步，端到端加密保护。</span>
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon orange">💾</div>
+                <h3>
+                    <span class="lang-en">Offline First</span>
+                    <span class="lang-zh">离线优先</span>
+                </h3>
+                <p>
+                    <span class="lang-en">Works completely offline. All data is encrypted and stored locally on your device.</span>
+                    <span class="lang-zh">完全离线可用，所有数据本地加密存储。</span>
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon cyan">🎨</div>
+                <h3>
+                    <span class="lang-en">Theme Support</span>
+                    <span class="lang-zh">主题支持</span>
+                </h3>
+                <p>
+                    <span class="lang-en">Seamlessly adapts to your system's light or dark theme preference.</span>
+                    <span class="lang-zh">无缝适配系统的浅色/深色主题。</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="download" id="download">
+        <div class="download-card">
+            <h2>
+                <span class="lang-en">Download Keyden</span>
+                <span class="lang-zh">下载 Keyden</span>
+            </h2>
+            <p>
+                <span class="lang-en">Get started with secure two-factor authentication in seconds.</span>
+                <span class="lang-zh">几秒钟即可开始安全的双因素认证。</span>
+            </p>
+            <a href="https://github.com/tasselx/Keyden/releases" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="lang-en">Download Universal DMG</span>
+                <span class="lang-zh">下载通用版 DMG</span>
+            </a>
+            <div class="system-req">
+                <div class="system-req-item">
+                    <span>💻</span>
+                    <span>macOS 12.0+</span>
+                </div>
+                <div class="system-req-item">
+                    <span>⚡</span>
+                    <span>Intel & Apple Silicon</span>
+                </div>
+                <div class="system-req-item">
+                    <span>📦</span>
+                    <span class="lang-en">~5 MB</span>
+                    <span class="lang-zh">约 5 MB</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/tasselx/Keyden">GitHub</a>
+            <a href="https://github.com/tasselx/Keyden/releases">
+                <span class="lang-en">Releases</span>
+                <span class="lang-zh">版本发布</span>
+            </a>
+            <a href="https://github.com/tasselx/Keyden/issues">
+                <span class="lang-en">Issues</span>
+                <span class="lang-zh">问题反馈</span>
+            </a>
+            <a href="https://github.com/tasselx/Keyden/blob/main/LICENSE">
+                <span class="lang-en">License</span>
+                <span class="lang-zh">许可证</span>
+            </a>
+        </div>
+        <p class="footer-copy">
+            <span class="lang-en">© 2024 Keyden. Open source under MIT License.</span>
+            <span class="lang-zh">© 2024 Keyden. 基于 MIT 许可证开源。</span>
+        </p>
+    </footer>
+
+    <script>
+        // Language detection and toggle
+        function getLang() {
+            const saved = localStorage.getItem('keyden-lang');
+            if (saved) return saved;
+            return navigator.language.startsWith('zh') ? 'zh' : 'en';
+        }
+
+        function setLang(lang) {
+            document.documentElement.lang = lang;
+            localStorage.setItem('keyden-lang', lang);
+        }
+
+        function toggleLang() {
+            const current = document.documentElement.lang;
+            setLang(current === 'en' ? 'zh' : 'en');
+        }
+
+        // Initialize
+        setLang(getLang());
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
