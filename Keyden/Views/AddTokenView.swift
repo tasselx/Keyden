@@ -151,6 +151,7 @@ struct AddTokenView: View {
                     TextField(L10n.pasteSecretKey, text: $inputText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
+                        .foregroundColor(theme.inputText)
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
@@ -158,7 +159,7 @@ struct AddTokenView: View {
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(errorMessage != nil ? theme.danger : theme.border, lineWidth: 1)
+                                .stroke(errorMessage != nil ? theme.danger : theme.inputBorder, lineWidth: 1)
                         )
                         .onSubmit { processInput() }
                     

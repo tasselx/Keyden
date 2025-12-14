@@ -153,6 +153,8 @@ struct GeneralTabContent: View {
                     }
                     .pickerStyle(.menu)
                     .frame(width: 100)
+                    .accentColor(theme.accent)
+                    .foregroundColor(theme.textPrimary)
                 }
             }
             
@@ -177,6 +179,8 @@ struct GeneralTabContent: View {
                     }
                     .pickerStyle(.menu)
                     .frame(width: 100)
+                    .accentColor(theme.accent)
+                    .foregroundColor(theme.textPrimary)
                 }
             }
             
@@ -810,6 +814,7 @@ struct TokenInputSheet: View {
             SecureField("ghp_xxxxxxxxxxxx", text: $token)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, design: .monospaced))
+                .foregroundColor(theme.inputText)
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
@@ -817,7 +822,7 @@ struct TokenInputSheet: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(theme.border, lineWidth: 1)
+                        .stroke(theme.inputBorder, lineWidth: 1)
                 )
             
             // Actions
@@ -899,6 +904,7 @@ struct GistInputSheet: View {
             TextField("e.g. abc123def456...", text: $gistId)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, design: .monospaced))
+                .foregroundColor(theme.inputText)
                 .padding(12)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
@@ -906,7 +912,7 @@ struct GistInputSheet: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(theme.border, lineWidth: 1)
+                        .stroke(theme.inputBorder, lineWidth: 1)
                 )
             
             HStack(spacing: 10) {

@@ -14,10 +14,71 @@ enum ViewMode {
     case settings
 }
 
+// MARK: - Toast Manager
+class ToastManager: ObservableObject {
+    static let shared = ToastManager()
+    
+    @Published var isShowing = false
+    @Published var message = ""
+    @Published var icon = "checkmark.circle.fill"
+    
+    private var hideTask: DispatchWorkItem?
+    
+    func show(_ message: String, icon: String = "checkmark.circle.fill", duration: Double = 1.5) {
+        hideTask?.cancel()
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            self.message = message
+            self.icon = icon
+            self.isShowing = true
+        }
+        
+        let task = DispatchWorkItem { [weak self] in
+            withAnimation(.easeOut(duration: 0.2)) {
+                self?.isShowing = false
+            }
+        }
+        hideTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: task)
+    }
+}
+
+// MARK: - Toast View
+struct ToastView: View {
+    @ObservedObject var manager = ToastManager.shared
+    let theme: ModernTheme
+    
+    var body: some View {
+        if manager.isShowing {
+            HStack(spacing: 6) {
+                Image(systemName: manager.icon)
+                    .font(.system(size: 12, weight: .semibold))
+                
+                Text(manager.message)
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(
+                        theme.isDark
+                            ? Color(red: 0.22, green: 0.22, blue: 0.26)
+                            : Color(red: 0.20, green: 0.20, blue: 0.25)
+                    )
+                    .shadow(color: .black.opacity(theme.isDark ? 0.4 : 0.2), radius: 8, x: 0, y: 4)
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+}
+
 struct MenuBarContentView: View {
     @StateObject private var vaultService = VaultService.shared
     @StateObject private var gistService = GistSyncService.shared
     @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var toastManager = ToastManager.shared
     
     @State private var searchText = ""
     @State private var copiedTokenId: UUID?
@@ -49,21 +110,27 @@ struct MenuBarContentView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            switch currentView {
-            case .list:
-                listView
-            case .addAccount:
-                AddTokenView(isPresented: Binding(
-                    get: { currentView == .addAccount },
-                    set: { if !$0 { currentView = .list } }
-                ))
-            case .settings:
-                SettingsView(isPresented: Binding(
-                    get: { currentView == .settings },
-                    set: { if !$0 { currentView = .list } }
-                ))
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                switch currentView {
+                case .list:
+                    listView
+                case .addAccount:
+                    AddTokenView(isPresented: Binding(
+                        get: { currentView == .addAccount },
+                        set: { if !$0 { currentView = .list } }
+                    ))
+                case .settings:
+                    SettingsView(isPresented: Binding(
+                        get: { currentView == .settings },
+                        set: { if !$0 { currentView = .list } }
+                    ))
+                }
             }
+            
+            // Toast overlay
+            ToastView(theme: theme)
+                .padding(.bottom, 60)
         }
         .frame(width: 340, height: 520)
         .background(theme.background)
@@ -486,6 +553,9 @@ struct TokenRow: View {
         withAnimation(.easeOut(duration: 0.2)) {
             copiedId = token.id
         }
+        
+        // Show toast
+        ToastManager.shared.show(L10n.copied)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             if copiedId == token.id {

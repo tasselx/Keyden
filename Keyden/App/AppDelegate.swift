@@ -15,6 +15,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
+        
+        // Apply theme before creating UI to ensure correct appearance
+        ThemeManager.shared.applyTheme()
+        
         menuBarController = MenuBarController()
         
         // Hide dock icon

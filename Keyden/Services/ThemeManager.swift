@@ -39,7 +39,22 @@ final class ThemeManager: ObservableObject {
     private init() {
         let saved = UserDefaults.standard.string(forKey: "themeMode") ?? "System"
         mode = ThemeMode(rawValue: saved) ?? .system
-        updateIsDark()
+        
+        // Set isDark based on saved mode (not relying on NSApp which may not be ready)
+        switch mode {
+        case .system:
+            // For system mode, default to light until NSApp is ready
+            // Will be updated in applyTheme() when called from AppDelegate
+            if let app = NSApp {
+                isDark = app.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            } else {
+                isDark = false
+            }
+        case .light:
+            isDark = false
+        case .dark:
+            isDark = true
+        }
         
         // Listen for system appearance changes
         DistributedNotificationCenter.default().addObserver(
@@ -48,6 +63,21 @@ final class ThemeManager: ObservableObject {
             name: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
             object: nil
         )
+        
+        // Listen for app launch completion to ensure correct theme
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidFinishLaunching),
+            name: NSApplication.didFinishLaunchingNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func appDidFinishLaunching() {
+        // Re-apply theme now that NSApp is fully ready
+        DispatchQueue.main.async {
+            self.applyTheme()
+        }
     }
     
     @objc private func systemAppearanceChanged() {
@@ -204,13 +234,20 @@ struct ModernTheme {
     var textSecondary: Color {
         isDark 
             ? Color(red: 0.65, green: 0.65, blue: 0.70)  // Cool gray
-            : Color(red: 0.40, green: 0.40, blue: 0.45)  // Balanced gray
+            : Color(red: 0.35, green: 0.35, blue: 0.40)  // Darker for better contrast
     }
     
     var textTertiary: Color {
         isDark 
             ? Color(red: 0.45, green: 0.45, blue: 0.50)  // Muted
-            : Color(red: 0.60, green: 0.60, blue: 0.65)  // Subtle
+            : Color(red: 0.50, green: 0.50, blue: 0.55)  // Darker for better visibility
+    }
+    
+    /// Placeholder text color - more visible than tertiary
+    var placeholder: Color {
+        isDark
+            ? Color(red: 0.40, green: 0.40, blue: 0.45)
+            : Color(red: 0.55, green: 0.55, blue: 0.60)
     }
     
     // MARK: - Borders & Separators
@@ -245,17 +282,24 @@ struct ModernTheme {
     var inputBackground: Color {
         isDark
             ? Color(red: 0.10, green: 0.10, blue: 0.12)  // Inset look
-            : Color(red: 0.94, green: 0.94, blue: 0.96)  // Soft inset
+            : Color.white  // Pure white for better contrast
     }
     
     var inputBorder: Color {
         isDark
             ? Color(red: 0.20, green: 0.20, blue: 0.24)
-            : Color(red: 0.85, green: 0.85, blue: 0.88)
+            : Color(red: 0.82, green: 0.82, blue: 0.85)  // Slightly darker border
     }
     
     var inputFocusBorder: Color {
         accent.opacity(0.6)
+    }
+    
+    /// Input text color - ensures good contrast
+    var inputText: Color {
+        isDark
+            ? Color(red: 0.92, green: 0.92, blue: 0.95)
+            : Color(red: 0.15, green: 0.15, blue: 0.18)  // Dark text on light background
     }
     
     // MARK: - Code Display
