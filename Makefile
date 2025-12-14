@@ -9,8 +9,8 @@ BUILD_DIR = build
 DIST_DIR = dist
 ARCHIVE_PATH = $(BUILD_DIR)/$(PROJECT_NAME).xcarchive
 
-# 获取版本号
-VERSION := $(shell /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$(BUILD_DIR)/$(PROJECT_NAME)-universal.app/Contents/Info.plist" 2>/dev/null || echo "1.0")
+# 获取版本号 (从 project.pbxproj 中读取 MARKETING_VERSION)
+VERSION := $(shell grep -m1 'MARKETING_VERSION' $(PROJECT_NAME).xcodeproj/project.pbxproj | sed 's/.*= *\([^;]*\);.*/\1/' | tr -d ' ')
 
 # DMG 配置
 DMG_VOLUME_NAME = $(PROJECT_NAME)
@@ -52,15 +52,17 @@ build-universal: $(BUILD_DIR)
 		ONLY_ACTIVE_ARCH=NO \
 		archive
 	@echo "📦 导出应用..."
-	xcodebuild -exportArchive \
+	@# 先清理目标目录，避免嵌套问题
+	@rm -rf "$(BUILD_DIR)/$(PROJECT_NAME)-universal.app"
+	@rm -rf "$(BUILD_DIR)/universal"
+	@# 尝试使用 exportArchive，如果失败则直接从 archive 复制
+	@xcodebuild -exportArchive \
 		-archivePath $(ARCHIVE_PATH) \
 		-exportPath $(BUILD_DIR)/universal \
-		-exportOptionsPlist ExportOptions.plist 2>/dev/null || \
+		-exportOptionsPlist ExportOptions.plist 2>/dev/null && \
+		mv "$(BUILD_DIR)/universal/$(PROJECT_NAME).app" "$(BUILD_DIR)/$(PROJECT_NAME)-universal.app" && \
+		rm -rf "$(BUILD_DIR)/universal" || \
 		cp -R "$(ARCHIVE_PATH)/Products/Applications/$(PROJECT_NAME).app" "$(BUILD_DIR)/$(PROJECT_NAME)-universal.app"
-	@if [ -d "$(BUILD_DIR)/universal/$(PROJECT_NAME).app" ]; then \
-		mv "$(BUILD_DIR)/universal/$(PROJECT_NAME).app" "$(BUILD_DIR)/$(PROJECT_NAME)-universal.app"; \
-		rm -rf "$(BUILD_DIR)/universal"; \
-	fi
 	@echo "✅ 通用版本构建完成"
 
 # 构建 Intel 版本 (x86_64)
@@ -76,6 +78,7 @@ build-intel: $(BUILD_DIR)
 		ONLY_ACTIVE_ARCH=NO \
 		archive
 	@echo "📦 导出应用..."
+	@rm -rf "$(BUILD_DIR)/$(PROJECT_NAME)-x86_64.app"
 	cp -R "$(BUILD_DIR)/$(PROJECT_NAME)-intel.xcarchive/Products/Applications/$(PROJECT_NAME).app" "$(BUILD_DIR)/$(PROJECT_NAME)-x86_64.app"
 	@echo "✅ Intel 版本构建完成"
 
@@ -92,6 +95,7 @@ build-arm: $(BUILD_DIR)
 		ONLY_ACTIVE_ARCH=NO \
 		archive
 	@echo "📦 导出应用..."
+	@rm -rf "$(BUILD_DIR)/$(PROJECT_NAME)-arm64.app"
 	cp -R "$(BUILD_DIR)/$(PROJECT_NAME)-arm.xcarchive/Products/Applications/$(PROJECT_NAME).app" "$(BUILD_DIR)/$(PROJECT_NAME)-arm64.app"
 	@echo "✅ Apple Silicon 版本构建完成"
 

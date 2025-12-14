@@ -283,7 +283,7 @@ struct GeneralTabContent: View {
                         }
                         Spacer()
                         
-                        Text("v1.0.0")
+                        Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                             .foregroundColor(theme.textTertiary)
                             .padding(.horizontal, 8)
