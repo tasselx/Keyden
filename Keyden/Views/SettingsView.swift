@@ -166,7 +166,6 @@ struct GeneralTabContent: View {
     let theme: ModernTheme
     @StateObject private var themeManager = ThemeManager.shared
     @StateObject private var languageManager = LanguageManager.shared
-    @AppStorage("autoClearClipboard") private var autoClearClipboard = false
     @StateObject private var vaultService = VaultService.shared
     @State private var launchAtLogin = false
     
@@ -179,63 +178,71 @@ struct GeneralTabContent: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            // Theme section
+        VStack(alignment: .leading, spacing: 16) {
+            // Appearance section - Theme & Language combined
             SettingsCard(title: L10n.appearance, icon: "paintbrush.fill", theme: theme) {
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: themeManager.mode.icon)
-                            .font(.system(size: 14))
-                            .foregroundColor(theme.accent)
-                        Text(L10n.theme)
-                            .font(.system(size: 13))
-                            .foregroundColor(theme.textPrimary)
+                VStack(spacing: 14) {
+                    // Theme row
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: themeManager.mode.icon)
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.accent)
+                                .frame(width: 16)
+                            Text(L10n.theme)
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.textPrimary)
+                        }
+                        
+                        Spacer()
+                        
+                        CustomPicker(
+                            selection: $themeManager.mode,
+                            options: ThemeMode.allCases,
+                            label: { themeDisplayName($0) },
+                            theme: theme
+                        )
                     }
                     
-                    Spacer()
+                    Divider()
+                        .background(theme.separator)
                     
-                    CustomPicker(
-                        selection: $themeManager.mode,
-                        options: ThemeMode.allCases,
-                        label: { themeDisplayName($0) },
-                        theme: theme
-                    )
+                    // Language row
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.accent)
+                                .frame(width: 16)
+                            Text(L10n.language)
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.textPrimary)
+                        }
+                        
+                        Spacer()
+                        
+                        CustomPicker(
+                            selection: $languageManager.languageMode,
+                            options: LanguageMode.allCases,
+                            label: { $0.displayName },
+                            theme: theme
+                        )
+                    }
                 }
             }
             
-            // Language section
-            SettingsCard(title: L10n.language, icon: "globe", theme: theme) {
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: languageManager.languageMode.icon)
-                            .font(.system(size: 14))
-                            .foregroundColor(theme.accent)
-                        Text(L10n.languageDesc)
-                            .font(.system(size: 13))
-                            .foregroundColor(theme.textPrimary)
-                    }
-                    
-                    Spacer()
-                    
-                    CustomPicker(
-                        selection: $languageManager.languageMode,
-                        options: LanguageMode.allCases,
-                        label: { $0.displayName },
-                        theme: theme
-                    )
-                }
-            }
-            
-            // Launch at login section
-            SettingsCard(title: L10n.general, icon: "power", theme: theme) {
+            // Preferences section
+            SettingsCard(title: L10n.general, icon: "gearshape.fill", theme: theme) {
+                // Launch at login
                 Toggle(isOn: $launchAtLogin) {
-                    VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "power")
+                            .font(.system(size: 13))
+                            .foregroundColor(theme.accent)
+                            .frame(width: 16)
                         Text(L10n.launchAtLogin)
                             .font(.system(size: 13))
                             .foregroundColor(theme.textPrimary)
-                        Text(L10n.launchAtLoginDesc)
-                            .font(.system(size: 11))
-                            .foregroundColor(theme.textSecondary)
                     }
                 }
                 .toggleStyle(.switch)
@@ -248,54 +255,70 @@ struct GeneralTabContent: View {
                 launchAtLogin = getLaunchAtLogin()
             }
             
-            // Clipboard section
-            SettingsCard(title: L10n.clipboard, icon: "doc.on.clipboard.fill", theme: theme) {
-                Toggle(isOn: $autoClearClipboard) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(L10n.autoClear)
-                            .font(.system(size: 13))
-                            .foregroundColor(theme.textPrimary)
-                        Text(L10n.autoClearDesc)
-                            .font(.system(size: 11))
-                            .foregroundColor(theme.textSecondary)
-                    }
-                }
-                .toggleStyle(.switch)
-                .controlSize(.small)
-            }
-            
-            // Stats section
-            SettingsCard(title: L10n.statistics, icon: "chart.bar.fill", theme: theme) {
-                HStack {
-                    StatItem(label: L10n.accounts, value: "\(vaultService.vault.tokens.count)", icon: "key.fill", theme: theme)
-                    Divider().frame(height: 30)
-                    StatItem(label: L10n.pinned, value: "\(vaultService.vault.tokens.filter { $0.isPinned }.count)", icon: "pin.fill", theme: theme)
-                }
-            }
-            
-            // About section
+            // Stats & About combined
             SettingsCard(title: L10n.about, icon: "info.circle.fill", theme: theme) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Keyden")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(theme.textPrimary)
-                        Text("2FA Authenticator for macOS")
-                            .font(.system(size: 11))
-                            .foregroundColor(theme.textSecondary)
+                VStack(spacing: 14) {
+                    // App info
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "app.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.accent)
+                                .frame(width: 16)
+                            Text("Keyden")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(theme.textPrimary)
+                        }
+                        Spacer()
+                        
+                        // GitHub link
+                        Button(action: openGitHub) {
+                            Text("🐙")
+                                .font(.system(size: 14))
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { hovering in
+                            if hovering {
+                                NSCursor.pointingHand.push()
+                            } else {
+                                NSCursor.pop()
+                            }
+                        }
+                        
+                        Text("v1.0.0")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(theme.textTertiary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(theme.inputBackground)
+                            .cornerRadius(4)
                     }
-                    Spacer()
-                    Text("v1.0.0")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundColor(theme.textTertiary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(theme.inputBackground)
-                        .cornerRadius(4)
+                    
+                    Divider()
+                        .background(theme.separator)
+                    
+                    // Stats row
+                    HStack(spacing: 0) {
+                        StatItem(label: L10n.accounts, value: "\(vaultService.vault.tokens.count)", icon: "key.fill", theme: theme)
+                        
+                        Rectangle()
+                            .fill(theme.separator)
+                            .frame(width: 1, height: 28)
+                        
+                        StatItem(label: L10n.pinned, value: "\(vaultService.vault.tokens.filter { $0.isPinned }.count)", icon: "pin.fill", theme: theme)
+                    }
                 }
             }
         }
         .padding(16)
+    }
+    
+    private func openGitHub() {
+        if let url = URL(string: "https://github.com/tasselx/Keyden") {
+            NSWorkspace.shared.open(url)
+        }
+        // Close the menu
+        NSApp.keyWindow?.close()
     }
     
     // MARK: - Launch at Login Helpers

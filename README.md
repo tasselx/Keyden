@@ -42,7 +42,7 @@ make dmg      # Create DMG
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tassel/Keyden&type=Date)](https://star-history.com/#tassel/Keyden&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tassel/Keyden&type=Date)](https://star-history.com/#tasselx/Keyden&Date)
 
 ## License
 

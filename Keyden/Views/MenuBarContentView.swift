@@ -583,16 +583,6 @@ struct TokenRow: View {
                 }
             }
         }
-        
-        // Auto-clear
-        if UserDefaults.standard.bool(forKey: "autoClearClipboard") {
-            let codeCopy = currentCode
-            DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                if NSPasteboard.general.string(forType: .string) == codeCopy {
-                    NSPasteboard.general.clearContents()
-                }
-            }
-        }
     }
     
     private func downloadQRCode() {
