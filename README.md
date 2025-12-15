@@ -53,6 +53,7 @@ Click the links below to directly access 2FA settings:
 ## Installation
 
 Download the latest DMG from [Releases](https://github.com/tasselx/Keyden/releases):
+
 Open the DMG and drag Keyden to Applications.
 
 

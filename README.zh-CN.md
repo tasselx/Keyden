@@ -54,6 +54,7 @@
 ## 安装
 
 从 [Releases](https://github.com/tasselx/Keyden/releases) 下载最新 DMG：
+
 打开 DMG，将 Keyden 拖入「应用程序」文件夹。
 
 
