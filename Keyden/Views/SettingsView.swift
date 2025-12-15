@@ -656,6 +656,8 @@ struct SyncTabContent: View {
             GistInputSheet(isPresented: $showGistInput, gistId: $gistIdInput, theme: theme) {
                 gistService.setGistId(gistIdInput)
                 gistIdInput = ""
+                // Force sync local data to the bound Gist (overwrite remote)
+                forcePush()
             }
         }
         .alert(L10n.pullConfirmTitle, isPresented: $showPullConfirm) {
@@ -692,6 +694,19 @@ struct SyncTabContent: View {
         Task {
             do {
                 try await gistService.push()
+                ToastManager.shared.show(L10n.dataSynced, icon: "checkmark.icloud.fill")
+            } catch {
+                message = (error.localizedDescription, true)
+                autoDismissError()
+            }
+        }
+    }
+    
+    private func forcePush() {
+        message = nil
+        Task {
+            do {
+                try await gistService.push(force: true)
                 ToastManager.shared.show(L10n.dataSynced, icon: "checkmark.icloud.fill")
             } catch {
                 message = (error.localizedDescription, true)

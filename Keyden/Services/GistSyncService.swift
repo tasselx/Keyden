@@ -48,8 +48,9 @@ final class GistSyncService: ObservableObject {
     // MARK: - Push (Upload)
     
     /// Push vault to GitHub Gist
+    /// - Parameter force: If true, skip remote version check and overwrite remote data
     @MainActor
-    func push() async throws {
+    func push(force: Bool = false) async throws {
         guard let token = keychain.githubToken else {
             throw GistError.noToken
         }
@@ -66,10 +67,12 @@ final class GistSyncService: ObservableObject {
         }
         
         if let gistId = keychain.gistId {
-            // Check remote version first
-            let remoteVersion = try await getRemoteVaultVersion(gistId: gistId, token: token)
-            if remoteVersion > vaultService.currentVaultVersion {
-                throw GistError.remoteNewer
+            // Check remote version first (skip if force push)
+            if !force {
+                let remoteVersion = try await getRemoteVaultVersion(gistId: gistId, token: token)
+                if remoteVersion > vaultService.currentVaultVersion {
+                    throw GistError.remoteNewer
+                }
             }
             
             // Update existing gist
