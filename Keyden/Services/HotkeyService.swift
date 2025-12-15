@@ -382,4 +382,3 @@ struct ShortcutRecorderView: View {
         hotkeyService.start()
     }
 }
-
