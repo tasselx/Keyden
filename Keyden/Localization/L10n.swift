@@ -119,6 +119,7 @@ class LanguageManager: ObservableObject {
         "no_qr_code_found": "No QR code found in image",
         "not_a_2fa_code": "QR code is not a 2FA code",
         "secret_required": "Secret key is required",
+        "quick_add_platforms": "Quick add popular platforms",
         "service": "Service",
         "account": "Account",
         "algorithm": "Algorithm",
@@ -255,6 +256,7 @@ enum L10n {
     static var notA2FACode: String { manager.localizedString(forKey: "not_a_2fa_code") }
     static var secretRequired: String { manager.localizedString(forKey: "secret_required") }
     static var duplicateAccount: String { manager.localizedString(forKey: "duplicate_account") }
+    static var quickAddPlatforms: String { manager.localizedString(forKey: "quick_add_platforms") }
     static var service: String { manager.localizedString(forKey: "service") }
     static var account: String { manager.localizedString(forKey: "account") }
     static var algorithm: String { manager.localizedString(forKey: "algorithm") }

@@ -224,6 +224,24 @@ struct AddTokenView: View {
                         .font(.system(size: 10))
                         .foregroundColor(theme.textTertiary)
                         .multilineTextAlignment(.center)
+                    
+                    // Quick add platforms link
+                    Button(action: {
+                        if let url = URL(string: "https://github.com/tasselx/Keyden/tree/main?tab=readme-ov-file#quick-start---enable-2fa-on-popular-platforms") {
+                            MenuBarController.shared?.hidePanel()
+                            NSWorkspace.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "link")
+                                .font(.system(size: 11))
+                            Text(L10n.quickAddPlatforms)
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(theme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)

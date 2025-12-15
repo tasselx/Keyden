@@ -48,6 +48,7 @@
 "not_a_2fa_code" = "QR code is not a 2FA code";
 "secret_required" = "Secret key is required";
 "duplicate_account" = "This account already exists";
+"quick_add_platforms" = "Quick add popular platforms";
 "service" = "Service";
 "account" = "Account";
 "algorithm" = "Algorithm";
