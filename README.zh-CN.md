@@ -29,12 +29,6 @@
 - 🔄 **导入/导出** - 轻松备份和恢复令牌
 - 🚀 **开机启动** - 支持随 Mac 自动启动
 
-## 支持的算法
-
-- SHA1（默认）
-- SHA256
-- SHA512
-
 ## 安装
 
 从 [Releases](https://github.com/tasselx/Keyden/releases) 下载最新 DMG：
@@ -47,14 +41,7 @@
 
 打开 DMG，将 Keyden 拖入「应用程序」文件夹。
 
-## 使用
-
-1. 启动 Keyden - 图标出现在菜单栏
-2. 点击「+」添加 TOTP 账户（扫描二维码或手动输入）
-3. 点击验证码即可复制到剪贴板
-4. 右键点击可查看更多选项（置顶、删除、导出二维码）
-
-### 快速开始 - 主流平台两步验证设置
+## 快速开始 - 主流平台两步验证设置
 
 点击下方链接可直接跳转至对应平台的两步验证设置页面：
 
@@ -75,6 +62,13 @@
 | ☁️ AWS | [IAM 安全](https://console.aws.amazon.com/iam/home#/security_credentials) |
 | 🔷 Cloudflare | [账户安全](https://dash.cloudflare.com/profile/authentication) |
 | 📧 ProtonMail | [账户设置](https://account.proton.me/u/0/mail/account-password) |
+
+## 使用
+
+1. 启动 Keyden - 图标出现在菜单栏
+2. 点击「+」添加 TOTP 账户（扫描二维码或手动输入）
+3. 点击验证码即可复制到剪贴板
+4. 右键点击可查看更多选项（置顶、删除、导出二维码）
 
 ### GitHub Gist 同步
 
