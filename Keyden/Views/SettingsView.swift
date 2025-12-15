@@ -774,21 +774,39 @@ struct DataTabContent: View {
                         
                         Spacer()
                         
-                        Button(action: exportData) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 11))
-                                Text(L10n.export)
-                                    .font(.system(size: 12, weight: .medium))
+                        HStack(spacing: 6) {
+                            Button(action: exportData) {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "curlybraces")
+                                        .font(.system(size: 10, weight: .semibold))
+                                    Text("JSON")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(theme.accent)
+                                .cornerRadius(5)
+                                .contentShape(Rectangle())
                             }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(theme.accent)
-                            .cornerRadius(6)
-                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            
+                            Button(action: exportTextData) {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "doc.text")
+                                        .font(.system(size: 10, weight: .semibold))
+                                    Text("TXT")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(theme.accent)
+                                .cornerRadius(5)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -886,6 +904,29 @@ struct DataTabContent: View {
                 do {
                     let data = try vaultService.getExportData()
                     try data.write(to: url, options: .atomic)
+                    message = ("Exported \(vaultService.vault.tokens.count) accounts successfully", false)
+                } catch {
+                    message = ("Export failed: \(error.localizedDescription)", true)
+                }
+            }
+        }
+    }
+    
+    private func exportTextData() {
+        message = nil
+        
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.nameFieldStringValue = "keyden_backup_\(formattedDate()).txt"
+        panel.message = L10n.saveBackupMessage
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                do {
+                    let textContent = vaultService.vault.tokens
+                        .map { $0.otpauthURL }
+                        .joined(separator: "\n")
+                    try textContent.write(to: url, atomically: true, encoding: .utf8)
                     message = ("Exported \(vaultService.vault.tokens.count) accounts successfully", false)
                 } catch {
                     message = ("Export failed: \(error.localizedDescription)", true)

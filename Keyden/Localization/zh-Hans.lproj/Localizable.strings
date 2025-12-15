@@ -121,6 +121,10 @@
 "import_success" = "导入成功";
 "security_warning" = "导出的文件包含未加密的密钥，请妥善保管！";
 "unencrypted_json" = "未加密的 JSON 格式";
+"export_text" = "导出 TXT";
+"export_json" = "导出 JSON";
+"export_text_desc" = "导出为纯文本格式，每行一个 otpauth:// 链接。";
+"otpauth_uri_format" = "otpauth:// 链接格式";
 
 // Management
 "manage_accounts" = "管理账户";

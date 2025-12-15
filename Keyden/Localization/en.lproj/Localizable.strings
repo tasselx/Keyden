@@ -121,6 +121,10 @@
 "import_success" = "Imported successfully";
 "security_warning" = "Exported files contain unencrypted secret keys. Keep them secure!";
 "unencrypted_json" = "Unencrypted JSON format";
+"export_text" = "Export TXT";
+"export_json" = "Export JSON";
+"export_text_desc" = "Export as plain text with otpauth:// URIs, one per line.";
+"otpauth_uri_format" = "otpauth:// URI format";
 
 // Management
 "manage_accounts" = "Manage Accounts";

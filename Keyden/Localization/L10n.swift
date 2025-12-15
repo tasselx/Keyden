@@ -191,6 +191,10 @@ class LanguageManager: ObservableObject {
         "import_success": "Imported successfully",
         "security_warning": "Exported files contain unencrypted secret keys. Keep them secure!",
         "unencrypted_json": "Unencrypted JSON format",
+        "export_text": "Export TXT",
+        "export_json": "Export JSON",
+        "export_text_desc": "Export as plain text with otpauth:// URIs, one per line.",
+        "otpauth_uri_format": "otpauth:// URI format",
         
         // Update
         "check_update": "Check for Updates",
@@ -329,6 +333,10 @@ enum L10n {
     static var importSuccess: String { manager.localizedString(forKey: "import_success") }
     static var securityWarning: String { manager.localizedString(forKey: "security_warning") }
     static var unencryptedJson: String { manager.localizedString(forKey: "unencrypted_json") }
+    static var exportText: String { manager.localizedString(forKey: "export_text") }
+    static var exportJson: String { manager.localizedString(forKey: "export_json") }
+    static var exportTextDesc: String { manager.localizedString(forKey: "export_text_desc") }
+    static var otpauthUriFormat: String { manager.localizedString(forKey: "otpauth_uri_format") }
     
     // MARK: - Management
     static var manageAccounts: String { manager.localizedString(forKey: "manage_accounts") }
