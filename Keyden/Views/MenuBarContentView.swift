@@ -14,6 +14,23 @@ enum ViewMode {
     case settings
 }
 
+// MARK: - Filter Mode
+enum FilterMode {
+    case all
+    case grouped
+    
+    var icon: String {
+        switch self {
+        case .all: return "line.3.horizontal"
+        case .grouped: return "square.stack"
+        }
+    }
+    
+    mutating func toggle() {
+        self = self == .all ? .grouped : .all
+    }
+}
+
 // MARK: - Toast Manager
 class ToastManager: ObservableObject {
     static let shared = ToastManager()
@@ -85,6 +102,7 @@ struct MenuBarContentView: View {
     @State private var copiedTokenId: UUID?
     @State private var draggedToken: Token?
     @State private var currentView: ViewMode = .list
+    @State private var filterMode: FilterMode = .all
     
     private var theme: ModernTheme {
         ModernTheme(isDark: themeManager.isDark)
@@ -163,8 +181,8 @@ struct MenuBarContentView: View {
     // MARK: - Header
     private var headerBar: some View {
         HStack(spacing: 10) {
-            // Search field
-            HStack(spacing: 8) {
+            // Search field with filter button inside
+            HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(theme.textTertiary)
@@ -182,9 +200,18 @@ struct MenuBarContentView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // Filter button (icon only)
+                Button(action: { filterMode.toggle() }) {
+                    Image(systemName: filterMode.icon)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(theme.textTertiary)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.leading, 10)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(theme.inputBackground)
@@ -210,32 +237,127 @@ struct MenuBarContentView: View {
         .padding(.vertical, 12)
     }
     
+    // MARK: - Grouped Tokens
+    private var groupedTokens: [(String, [Token])] {
+        // First, separate pinned and non-pinned tokens
+        let pinnedTokens = filteredTokens.filter { $0.isPinned }
+        let unpinnedTokens = filteredTokens.filter { !$0.isPinned }
+        
+        // Group unpinned tokens by issuer (case-insensitive)
+        // Use lowercase key for grouping, but keep original display name
+        var groups: [String: (displayName: String, tokens: [Token])] = [:]
+        for token in unpinnedTokens {
+            let rawKey = token.issuer.isEmpty ? token.displayName : token.issuer
+            let normalizedKey = rawKey.lowercased().trimmingCharacters(in: .whitespaces)
+            
+            if var existing = groups[normalizedKey] {
+                existing.tokens.append(token)
+                groups[normalizedKey] = existing
+            } else {
+                groups[normalizedKey] = (displayName: rawKey, tokens: [token])
+            }
+        }
+        
+        // Sort groups alphabetically by display name
+        let sortedGroups = groups.values
+            .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+            .map { ($0.displayName, $0.tokens) }
+        
+        // Build result: pinned section first (if any), then grouped sections
+        var result: [(String, [Token])] = []
+        if !pinnedTokens.isEmpty {
+            // Use special marker for pinned section
+            result.append(("__PINNED__", pinnedTokens))
+        }
+        result.append(contentsOf: sortedGroups)
+        
+        return result
+    }
+    
     // MARK: - Token List
     private var tokenList: some View {
         ScrollView(.vertical, showsIndicators: false) {
             LazyVStack(spacing: 6) {
-                ForEach(filteredTokens) { token in
-                    TokenRow(
-                        token: token,
-                        copiedId: $copiedTokenId,
-                        onPin: { togglePin(token) },
-                        theme: theme
-                    )
-                    .onDrag {
-                        draggedToken = token
-                        return NSItemProvider(object: token.id.uuidString as NSString)
+                if filterMode == .grouped {
+                    // Grouped view
+                    ForEach(groupedTokens, id: \.0) { group in
+                        let isPinned = group.0 == "__PINNED__"
+                        
+                        if isPinned {
+                            // Pinned items: no header, just show tokens directly
+                            ForEach(group.1) { token in
+                                tokenRowView(for: token)
+                            }
+                            
+                            // Add a subtle divider after pinned items if there are more groups
+                            if groupedTokens.count > 1 {
+                                Divider()
+                                    .background(theme.separator)
+                                    .padding(.vertical, 4)
+                            }
+                        } else {
+                            // Regular groups with header
+                            Section {
+                                ForEach(group.1) { token in
+                                    tokenRowView(for: token)
+                                }
+                            } header: {
+                                sectionHeader(title: group.0, count: group.1.count)
+                            }
+                        }
                     }
-                    .onDrop(of: [.text], delegate: TokenDropDelegate(
-                        token: token,
-                        tokens: sortedTokens,
-                        draggedToken: $draggedToken,
-                        onReorder: reorderTokens
-                    ))
+                } else {
+                    // Flat list view
+                    ForEach(filteredTokens) { token in
+                        tokenRowView(for: token)
+                    }
                 }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
         }
+    }
+    
+    private func tokenRowView(for token: Token) -> some View {
+        TokenRow(
+            token: token,
+            copiedId: $copiedTokenId,
+            onPin: { togglePin(token) },
+            theme: theme
+        )
+        .onDrag {
+            draggedToken = token
+            return NSItemProvider(object: token.id.uuidString as NSString)
+        }
+        .onDrop(of: [.text], delegate: TokenDropDelegate(
+            token: token,
+            tokens: sortedTokens,
+            draggedToken: $draggedToken,
+            onReorder: reorderTokens
+        ))
+    }
+    
+    private func sectionHeader(title: String, count: Int) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(theme.textSecondary)
+            
+            Text("\(count)")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(theme.textTertiary)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule()
+                        .fill(theme.surfaceSecondary)
+                )
+            
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
     
     // MARK: - Empty State

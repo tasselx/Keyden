@@ -21,6 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         menuBarController = MenuBarController()
         
+        // Start global hotkey listener
+        HotkeyService.shared.start()
+        
         // Hide dock icon
         NSApp.setActivationPolicy(.accessory)
         

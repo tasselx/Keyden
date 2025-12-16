@@ -26,6 +26,8 @@ A clean and elegant macOS menu bar TOTP authenticator.
 - 🎨 **Theme Support** - Light/Dark mode, follows system preference
 - 🌍 **Multi-Language** - English and Simplified Chinese
 - 📌 **Pin & Reorder** - Pin frequently used accounts, drag to reorder
+- 📂 **Group View** - Group accounts by issuer for better organization
+- ⌨️ **Global Hotkey** - Customizable keyboard shortcut to open menu (default: ⌘⇧K)
 - 🔄 **Import/Export** - Backup and restore your tokens easily
 - 🚀 **Launch at Login** - Start automatically with your Mac
 

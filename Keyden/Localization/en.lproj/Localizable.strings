@@ -142,3 +142,17 @@
 "up_to_date" = "You're up to date";
 "checking_update" = "Checking...";
 
+// Hotkey
+"hotkey" = "Hotkey";
+"open_menu" = "Open Menu";
+"press_shortcut" = "Press...";
+"not_set" = "Not Set";
+"clear_shortcut" = "Clear";
+"hotkey_desc" = "Press to open menu bar";
+
+// Filter
+"filter_all" = "All";
+"filter_grouped" = "Grouped";
+"pinned_section" = "Pinned";
+"other_section" = "Other";
+

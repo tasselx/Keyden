@@ -200,7 +200,21 @@ class LanguageManager: ObservableObject {
         "check_update": "Check for Updates",
         "new_version_available": "New version available",
         "up_to_date": "You're up to date",
-        "checking_update": "Checking..."
+        "checking_update": "Checking...",
+        
+        // Hotkey
+        "hotkey": "Hotkey",
+        "open_menu": "Open Menu",
+        "press_shortcut": "Press...",
+        "not_set": "Not Set",
+        "clear_shortcut": "Clear",
+        "hotkey_desc": "Press to open menu bar",
+        
+        // Filter
+        "filter_all": "All",
+        "filter_grouped": "Grouped",
+        "pinned_section": "Pinned",
+        "other_section": "Other"
     ]
 }
 
@@ -355,6 +369,20 @@ enum L10n {
     static var newVersionAvailable: String { manager.localizedString(forKey: "new_version_available") }
     static var upToDate: String { manager.localizedString(forKey: "up_to_date") }
     static var checkingUpdate: String { manager.localizedString(forKey: "checking_update") }
+    
+    // MARK: - Hotkey
+    static var hotkey: String { manager.localizedString(forKey: "hotkey") }
+    static var openMenu: String { manager.localizedString(forKey: "open_menu") }
+    static var pressShortcut: String { manager.localizedString(forKey: "press_shortcut") }
+    static var notSet: String { manager.localizedString(forKey: "not_set") }
+    static var clearShortcut: String { manager.localizedString(forKey: "clear_shortcut") }
+    static var hotkeyDesc: String { manager.localizedString(forKey: "hotkey_desc") }
+    
+    // MARK: - Filter
+    static var filterAll: String { manager.localizedString(forKey: "filter_all") }
+    static var filterGrouped: String { manager.localizedString(forKey: "filter_grouped") }
+    static var pinnedSection: String { manager.localizedString(forKey: "pinned_section") }
+    static var otherSection: String { manager.localizedString(forKey: "other_section") }
 }
 
 // MARK: - RawRepresentable for AppStorage

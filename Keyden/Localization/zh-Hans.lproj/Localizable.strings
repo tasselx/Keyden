@@ -142,3 +142,17 @@
 "up_to_date" = "已是最新版本";
 "checking_update" = "正在检查...";
 
+// Hotkey
+"hotkey" = "快捷键";
+"open_menu" = "打开菜单";
+"press_shortcut" = "请按键...";
+"not_set" = "未设置";
+"clear_shortcut" = "清除";
+"hotkey_desc" = "按下快捷键打开菜单栏";
+
+// Filter
+"filter_all" = "全部";
+"filter_grouped" = "分组";
+"pinned_section" = "置顶";
+"other_section" = "其他";
+

@@ -179,6 +179,7 @@ struct GeneralTabContent: View {
     @StateObject private var themeManager = ThemeManager.shared
     @StateObject private var languageManager = LanguageManager.shared
     @StateObject private var updateService = UpdateService.shared
+    @StateObject private var hotkeyService = HotkeyService.shared
     @State private var launchAtLogin = false
     
     private func themeDisplayName(_ mode: ThemeMode) -> String {
@@ -243,23 +244,58 @@ struct GeneralTabContent: View {
                 }
             }
             
-            // General section - Launch at login
+            // General section - Launch at login & Hotkey
             SettingsCard(title: L10n.general, icon: "gearshape.fill", theme: theme) {
-                Toggle(isOn: $launchAtLogin) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "power")
-                            .font(.system(size: 12))
-                            .foregroundColor(theme.accent)
-                            .frame(width: 16)
-                        Text(L10n.launchAtLogin)
-                            .font(.system(size: 13))
-                            .foregroundColor(theme.textPrimary)
+                VStack(spacing: 12) {
+                    // Launch at login row
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "power")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.accent)
+                                .frame(width: 16)
+                            Text(L10n.launchAtLogin)
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.textPrimary)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $launchAtLogin)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .labelsHidden()
+                            .onChange(of: launchAtLogin) { newValue in
+                                setLaunchAtLogin(newValue)
+                            }
                     }
-                }
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .onChange(of: launchAtLogin) { newValue in
-                    setLaunchAtLogin(newValue)
+                    
+                    Divider()
+                        .background(theme.separator)
+                    
+                    // Hotkey row - fixed height design
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "command")
+                                .font(.system(size: 12))
+                                .foregroundColor(theme.accent)
+                                .frame(width: 16)
+                            Text(L10n.hotkey)
+                                .font(.system(size: 13))
+                                .foregroundColor(theme.textPrimary)
+                        }
+                        
+                        Spacer()
+                        
+                        ShortcutRecorderView(hotkeyService: hotkeyService, theme: theme)
+                            .opacity(hotkeyService.isEnabled ? 1 : 0.4)
+                            .disabled(!hotkeyService.isEnabled)
+                        
+                        Toggle("", isOn: $hotkeyService.isEnabled)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .labelsHidden()
+                    }
                 }
             }
             .onAppear {
