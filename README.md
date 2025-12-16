@@ -44,13 +44,35 @@ Click the links below to directly access 2FA settings:
 | 🟠 Amazon | [Two-Step Verification](https://www.amazon.com/a/settings/approval) |
 | 📘 Facebook | [Security Settings](https://www.facebook.com/settings?tab=security) |
 | 🐦 X (Twitter) | [Account Security](https://twitter.com/settings/account/login_verification) |
+| 📸 Instagram | [Security Settings](https://www.instagram.com/accounts/two_factor_authentication/) |
 | 🎮 Discord | [Account Settings](https://discord.com/channels/@me) → User Settings → My Account |
-| 📦 Dropbox | [Security Settings](https://www.dropbox.com/account/security) |
-| 💼 LinkedIn | [Two-Step Verification](https://www.linkedin.com/psettings/two-step-verification) |
+| 🎮 Steam | [Steam Guard](https://store.steampowered.com/twofactor/manage) |
+| 🎮 Epic Games | [Account Security](https://www.epicgames.com/account/password) |
+| �  Dropbox | [Security Settings](https://www.dropbox.com/account/security) |
+| �  LinkedIn | [Two-Step Verification](https://www.linkedin.com/psettings/two-step-verification) |
+| 🐦 Reddit | [Account Settings](https://www.reddit.com/settings/privacy) |
+| 💬 Slack | Workspace Settings → Account Settings → Two-Factor Authentication |
+| 🔐 1Password | [Account Settings](https://my.1password.com/profile) |
+| 🔐 Bitwarden | [Account Settings](https://vault.bitwarden.com/#/settings/security/two-factor) |
 | ☁️ AWS | [IAM Security](https://console.aws.amazon.com/iam/home#/security_credentials) |
+| ☁️ Azure | [Security Info](https://mysignins.microsoft.com/security-info) |
+| ☁️ Google Cloud | [Security Settings](https://myaccount.google.com/signinoptions/two-step-verification) |
+| ☁️ DigitalOcean | [Account Security](https://cloud.digitalocean.com/account/security) |
 | 🔷 Cloudflare | [Account Security](https://dash.cloudflare.com/profile/authentication) |
 | 📧 ProtonMail | [Account Settings](https://account.proton.me/u/0/mail/account-password) |
 | 🎵 Spotify | [Account Security](https://www.spotify.com/account/security/) |
+| 💰 PayPal | [Security Settings](https://www.paypal.com/myaccount/settings/security) |
+| 💰 Coinbase | [Security Settings](https://www.coinbase.com/settings/security) |
+| 💰 Binance | [Security Settings](https://www.binance.com/en/my/security) |
+| 🛒 Shopify | [Account Security](https://accounts.shopify.com/security) |
+| 📝 Notion | [Account Settings](https://www.notion.so/my-account) → Security |
+| 🎨 Figma | [Account Settings](https://www.figma.com/settings) |
+| 🐳 Docker Hub | [Account Security](https://hub.docker.com/settings/security) |
+| 📦 npm | [Account Settings](https://www.npmjs.com/settings/~/tfa) |
+| 🦊 GitLab | [Account Security](https://gitlab.com/-/profile/two_factor_auth) |
+| 🪣 Bitbucket | [Account Security](https://bitbucket.org/account/settings/two-step-verification/manage) |
+
+> 💡 **Tip**: For platforms not listed above, 2FA settings are typically found in **Account Settings → Security** or **Privacy & Security**. Look for options like "Two-Factor Authentication", "2-Step Verification", or "Authenticator App".
 
 ## Installation
 

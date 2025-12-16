@@ -44,14 +44,37 @@
 | 🟠 亚马逊 | [两步验证](https://www.amazon.com/a/settings/approval) |
 | 📘 Facebook | [安全设置](https://www.facebook.com/settings?tab=security) |
 | 🐦 X (Twitter) | [账户安全](https://twitter.com/settings/account/login_verification) |
+| 📸 Instagram | [安全设置](https://www.instagram.com/accounts/two_factor_authentication/) |
 | 🎮 Discord | [账户设置](https://discord.com/channels/@me) → 用户设置 → 我的账户 |
+| 🎮 Steam | [Steam Guard](https://store.steampowered.com/twofactor/manage) |
+| 🎮 Epic Games | [账户安全](https://www.epicgames.com/account/password) |
 | 📦 Dropbox | [安全设置](https://www.dropbox.com/account/security) |
 | 💼 领英 | [两步验证](https://www.linkedin.com/psettings/two-step-verification) |
+| 🐦 Reddit | [账户设置](https://www.reddit.com/settings/privacy) |
+| 💬 Slack | 工作区设置 → 账户设置 → 两步验证 |
+| 🔐 1Password | [账户设置](https://my.1password.com/profile) |
+| 🔐 Bitwarden | [账户设置](https://vault.bitwarden.com/#/settings/security/two-factor) |
+| ☁️ AWS | [IAM 安全](https://console.aws.amazon.com/iam/home#/security_credentials) |
+| ☁️ Azure | [安全信息](https://mysignins.microsoft.com/security-info) |
+| ☁️ Google Cloud | [安全设置](https://myaccount.google.com/signinoptions/two-step-verification) |
+| ☁️ DigitalOcean | [账户安全](https://cloud.digitalocean.com/account/security) |
 | ☁️ 阿里云 | [安全设置](https://account.console.aliyun.com/#/secure) |
 | ☁️ 腾讯云 | [安全设置](https://console.cloud.tencent.com/developer/security) |
-| ☁️ AWS | [IAM 安全](https://console.aws.amazon.com/iam/home#/security_credentials) |
 | 🔷 Cloudflare | [账户安全](https://dash.cloudflare.com/profile/authentication) |
 | 📧 ProtonMail | [账户设置](https://account.proton.me/u/0/mail/account-password) |
+| 🎵 Spotify | [账户安全](https://www.spotify.com/account/security/) |
+| 💰 PayPal | [安全设置](https://www.paypal.com/myaccount/settings/security) |
+| 💰 Coinbase | [安全设置](https://www.coinbase.com/settings/security) |
+| 💰 Binance | [安全设置](https://www.binance.com/en/my/security) |
+| 🛒 Shopify | [账户安全](https://accounts.shopify.com/security) |
+| 📝 Notion | [账户设置](https://www.notion.so/my-account) → 安全 |
+| 🎨 Figma | [账户设置](https://www.figma.com/settings) |
+| 🐳 Docker Hub | [账户安全](https://hub.docker.com/settings/security) |
+| 📦 npm | [账户设置](https://www.npmjs.com/settings/~/tfa) |
+| 🦊 GitLab | [账户安全](https://gitlab.com/-/profile/two_factor_auth) |
+| 🪣 Bitbucket | [账户安全](https://bitbucket.org/account/settings/two-step-verification/manage) |
+
+> 💡 **提示**: 对于未列出的平台，两步验证设置通常位于 **账户设置 → 安全** 或 **隐私与安全** 中。查找类似"两步验证"、"双因素认证"或"身份验证器应用"的选项。
 
 ## 安装
 
