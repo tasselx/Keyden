@@ -290,6 +290,14 @@ make build-all      # 通用
 
 ---
 
+## 🎯 作者的其他项目
+
+| 应用 | 描述 |
+|:---|:---|
+| [LanShare-Mac](https://github.com/tasselx/LanShare-Mac) | 简洁高效的 macOS 局域网文件共享工具 |
+
+---
+
 ## ⭐ Star History
 
 <p align="center">

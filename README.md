@@ -288,6 +288,14 @@ Your sponsorship can help me purchase an Apple Developer account, which will all
 
 ---
 
+## 🎯 Also by Author
+
+| App | Description |
+|:---|:---|
+| [LanShare-Mac](https://github.com/tasselx/LanShare-Mac) | A simple and efficient LAN file sharing tool for macOS |
+
+---
+
 ## ⭐ Star History
 
 <p align="center">
