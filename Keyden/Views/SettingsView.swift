@@ -1056,8 +1056,8 @@ struct DataTabContent: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [.json]
-        panel.message = "Select a Keyden backup file"
+        panel.allowedContentTypes = [.json, .plainText]  // Support JSON and TXT files
+        panel.message = "Select a Keyden backup file (JSON or TXT)"
         
         panel.begin { response in
             if response == .OK, let url = panel.url {
@@ -1067,17 +1067,96 @@ struct DataTabContent: View {
         }
     }
     
+    /// Simple import format for external JSON files (e.g., converted_keyden.json)
+    /// Supports flexible import with auto-generated missing fields
+    private struct SimpleImportToken: Codable {
+        let account: String?
+        let label: String?
+        let isPinned: Bool?
+        let issuer: String?
+        let sortOrder: Int?
+        let secret: String
+        // Additional optional fields
+        let algorithm: String?
+        let digits: Int?
+        let period: Int?
+        let id: String?
+        let updatedAt: Double?
+        
+        /// Convert algorithm string to TOTPAlgorithm enum
+        private func parseAlgorithm() -> TOTPAlgorithm {
+            switch algorithm?.uppercased() {
+            case "SHA256": return .sha256
+            case "SHA512": return .sha512
+            default: return .sha1
+            }
+        }
+        
+        /// Convert to Token with auto-generated missing fields
+        func toToken(sortIndex: Int) -> Token {
+            Token(
+                id: UUID(),  // Auto-generate new UUID
+                issuer: issuer ?? "",
+                account: account ?? "",
+                label: label ?? "",
+                secret: secret,
+                digits: digits ?? 6,
+                period: period ?? 30,
+                algorithm: parseAlgorithm(),
+                sortOrder: sortOrder ?? sortIndex,  // Use index if not provided
+                isPinned: isPinned ?? false,
+                updatedAt: Date()  // Auto-generate current timestamp
+            )
+        }
+    }
+    
     private func performImport() {
         guard let url = importURL else { return }
         
         do {
             let data = try Data(contentsOf: url)
-            let importedVault = try JSONDecoder().decode(Vault.self, from: data)
+            var tokens: [Token] = []
+            
+            // Check file extension for format hint
+            let fileExtension = url.pathExtension.lowercased()
+            
+            // Try TXT format first if extension is .txt
+            if fileExtension == "txt" {
+                if let textContent = String(data: data, encoding: .utf8) {
+                    let lines = textContent.components(separatedBy: .newlines)
+                    for (index, line) in lines.enumerated() {
+                        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                        if trimmedLine.hasPrefix("otpauth://"),
+                           let otpauth = OTPAuthURL.parse(trimmedLine) {
+                            var token = otpauth.toToken()
+                            token.sortOrder = index
+                            tokens.append(token)
+                        }
+                    }
+                }
+                if tokens.isEmpty {
+                    throw NSError(domain: "ImportError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No valid otpauth URLs found in file"])
+                }
+            }
+            // Try to decode as native Vault format first
+            else if let importedVault = try? JSONDecoder().decode(Vault.self, from: data) {
+                tokens = importedVault.tokens
+            }
+            // Try to decode as simple JSON array format (e.g., converted_keyden.json)
+            else if let simpleTokens = try? JSONDecoder().decode([SimpleImportToken].self, from: data) {
+                tokens = simpleTokens.enumerated().map { index, item in
+                    item.toToken(sortIndex: index)
+                }
+            }
+            // If all fail, report error
+            else {
+                throw NSError(domain: "ImportError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unrecognized file format"])
+            }
             
             var addedCount = 0
             var skippedCount = 0
             
-            for token in importedVault.tokens {
+            for token in tokens {
                 // Check for duplicate by secret
                 let isDuplicate = vaultService.vault.tokens.contains { $0.secret == token.secret }
                 if isDuplicate {
