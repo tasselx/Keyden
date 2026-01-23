@@ -1056,8 +1056,8 @@ struct DataTabContent: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [.json]
-        panel.message = "Select a Keyden backup file"
+        panel.allowedContentTypes = [.json, .plainText]  // Support JSON and TXT files
+        panel.message = "Select a Keyden backup file (JSON or TXT)"
         
         panel.begin { response in
             if response == .OK, let url = panel.url {
@@ -1117,8 +1117,29 @@ struct DataTabContent: View {
             let data = try Data(contentsOf: url)
             var tokens: [Token] = []
             
+            // Check file extension for format hint
+            let fileExtension = url.pathExtension.lowercased()
+            
+            // Try TXT format first if extension is .txt
+            if fileExtension == "txt" {
+                if let textContent = String(data: data, encoding: .utf8) {
+                    let lines = textContent.components(separatedBy: .newlines)
+                    for (index, line) in lines.enumerated() {
+                        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                        if trimmedLine.hasPrefix("otpauth://"),
+                           let otpauth = OTPAuthURL.parse(trimmedLine) {
+                            var token = otpauth.toToken()
+                            token.sortOrder = index
+                            tokens.append(token)
+                        }
+                    }
+                }
+                if tokens.isEmpty {
+                    throw NSError(domain: "ImportError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No valid otpauth URLs found in file"])
+                }
+            }
             // Try to decode as native Vault format first
-            if let importedVault = try? JSONDecoder().decode(Vault.self, from: data) {
+            else if let importedVault = try? JSONDecoder().decode(Vault.self, from: data) {
                 tokens = importedVault.tokens
             }
             // Try to decode as simple JSON array format (e.g., converted_keyden.json)
@@ -1127,7 +1148,7 @@ struct DataTabContent: View {
                     item.toToken(sortIndex: index)
                 }
             }
-            // If both fail, report error
+            // If all fail, report error
             else {
                 throw NSError(domain: "ImportError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unrecognized file format"])
             }
