@@ -578,8 +578,7 @@ struct SyncTabContent: View {
                         .controlSize(.small)
                         .onChange(of: autoSync) { newValue in
                             if newValue {
-                                // Push immediately when enabling auto-sync
-                                push()
+                                syncConfiguredVault()
                             }
                         }
                         
@@ -704,8 +703,7 @@ struct SyncTabContent: View {
             GistInputSheet(isPresented: $showGistInput, gistId: $gistIdInput, theme: theme) {
                 gistService.setGistId(gistIdInput)
                 gistIdInput = ""
-                // Force sync local data to the bound Gist (overwrite remote)
-                forcePush()
+                syncBoundGist()
             }
         }
         .alert(L10n.pullConfirmTitle, isPresented: $showPullConfirm) {
@@ -728,8 +726,7 @@ struct SyncTabContent: View {
                     gistService.setToken(token)
                     showTokenInput = false
                     message = (L10n.tokenSaved, false)
-                    // Immediately sync after adding token
-                    push()
+                    syncConfiguredVault()
                 } else {
                     message = ("Invalid token. Check your token and try again.", true)
                 }
@@ -750,19 +747,6 @@ struct SyncTabContent: View {
         }
     }
     
-    private func forcePush() {
-        message = nil
-        Task {
-            do {
-                try await gistService.push(force: true)
-                ToastManager.shared.show(L10n.dataSynced, icon: "checkmark.icloud.fill")
-            } catch {
-                message = (error.localizedDescription, true)
-                autoDismissError()
-            }
-        }
-    }
-    
     private func pull() {
         message = nil
         Task {
@@ -773,6 +757,30 @@ struct SyncTabContent: View {
                 message = (error.localizedDescription, true)
                 autoDismissError()
             }
+        }
+    }
+    
+    private func syncConfiguredVault() {
+        guard !gistService.isSyncing else { return }
+        
+        if gistService.hasGist {
+            if vaultService.vault.tokens.isEmpty {
+                pull()
+            } else {
+                push()
+            }
+        } else if !vaultService.vault.tokens.isEmpty {
+            push()
+        }
+    }
+    
+    private func syncBoundGist() {
+        guard !gistService.isSyncing else { return }
+        
+        if vaultService.vault.tokens.isEmpty {
+            pull()
+        } else {
+            showPullConfirm = true
         }
     }
     

@@ -98,12 +98,14 @@ final class VaultService: ObservableObject {
     }
     
     /// Save vault to disk
-    func saveVault(triggerSync: Bool = true) throws {
+    func saveVault(triggerSync: Bool = true, incrementVersion: Bool = true) throws {
         guard let key = encryptionKey else {
             throw VaultError.locked
         }
         
-        vault.incrementVersion()
+        if incrementVersion {
+            vault.incrementVersion()
+        }
         
         let plainData = try JSONEncoder().encode(vault)
         let nonce = AES.GCM.Nonce()
@@ -137,7 +139,6 @@ final class VaultService: ObservableObject {
             : UserDefaults.standard.bool(forKey: "autoSync")
         guard autoSyncEnabled else { return }
         guard GistSyncService.shared.isConfigured else { return }
-        guard !GistSyncService.shared.isSyncing else { return }
         
         // Cancel previous pending sync
         autoSyncWorkItem?.cancel()
@@ -145,6 +146,11 @@ final class VaultService: ObservableObject {
         // Debounce: wait a moment before syncing to batch rapid changes
         let workItem = DispatchWorkItem {
             Task { @MainActor in
+                if GistSyncService.shared.isSyncing {
+                    self.triggerAutoSync()
+                    return
+                }
+                
                 do {
                     try await GistSyncService.shared.push()
                     ToastManager.shared.show(L10n.dataSynced, icon: "checkmark.icloud.fill")
@@ -167,7 +173,7 @@ final class VaultService: ObservableObject {
         let importedVault = try JSONDecoder().decode(Vault.self, from: data)
         vault = importedVault
         // Don't trigger auto-sync when importing from remote
-        try saveVault(triggerSync: false)
+        try saveVault(triggerSync: false, incrementVersion: false)
     }
     
     // MARK: - Token Operations
@@ -258,4 +264,3 @@ enum VaultError: LocalizedError {
         }
     }
 }
-

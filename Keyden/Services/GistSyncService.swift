@@ -51,6 +51,10 @@ final class GistSyncService: ObservableObject {
     /// - Parameter force: If true, skip remote version check and overwrite remote data
     @MainActor
     func push(force: Bool = false) async throws {
+        guard !isSyncing else {
+            throw GistError.syncInProgress
+        }
+        
         guard let token = keychain.githubToken else {
             throw GistError.noToken
         }
@@ -61,7 +65,8 @@ final class GistSyncService: ObservableObject {
         defer { isSyncing = false }
         
         // Get vault data as JSON
-        let vaultData = try vaultService.getExportData()
+        let localVault = vaultService.vault
+        let vaultData = try JSONEncoder().encode(localVault)
         guard let content = String(data: vaultData, encoding: .utf8) else {
             throw GistError.invalidContent
         }
@@ -69,8 +74,22 @@ final class GistSyncService: ObservableObject {
         if let gistId = keychain.gistId {
             // Check remote version first (skip if force push)
             if !force {
-                let remoteVersion = try await getRemoteVaultVersion(gistId: gistId, token: token)
-                if remoteVersion > vaultService.currentVaultVersion {
+                let remoteVault = try await fetchRemoteVault(id: gistId, token: token)
+                let remoteChanged = remoteVault != localVault
+                
+                if localVault.tokens.isEmpty && !remoteVault.tokens.isEmpty {
+                    throw GistError.emptyLocalWouldOverwriteRemote
+                }
+                
+                if remoteVault.vaultVersion > localVault.vaultVersion {
+                    throw GistError.remoteNewer
+                }
+                
+                if remoteVault.vaultVersion == localVault.vaultVersion && remoteChanged {
+                    throw GistError.remoteConflict
+                }
+                
+                if remoteVault.updatedAt > localVault.updatedAt && remoteChanged {
                     throw GistError.remoteNewer
                 }
             }
@@ -91,6 +110,10 @@ final class GistSyncService: ObservableObject {
     /// Pull vault from GitHub Gist
     @MainActor
     func pull() async throws {
+        guard !isSyncing else {
+            throw GistError.syncInProgress
+        }
+        
         guard let token = keychain.githubToken else {
             throw GistError.noToken
         }
@@ -120,18 +143,7 @@ final class GistSyncService: ObservableObject {
     
     /// Get remote vault version
     func getRemoteVaultVersion(gistId: String, token: String) async throws -> Int {
-        let content = try await fetchGist(id: gistId, token: token)
-        
-        guard let data = content.data(using: .utf8) else {
-            return 0
-        }
-        
-        // Try to decode as Vault to get version
-        if let vault = try? JSONDecoder().decode(Vault.self, from: data) {
-            return vault.vaultVersion
-        }
-        
-        return 0
+        try await fetchRemoteVault(id: gistId, token: token).vaultVersion
     }
     
     // MARK: - Check Remote
@@ -145,8 +157,10 @@ final class GistSyncService: ObservableObject {
         }
         
         do {
-            let remoteVersion = try await getRemoteVaultVersion(gistId: gistId, token: token)
-            return remoteVersion > vaultService.currentVaultVersion
+            let remoteVault = try await fetchRemoteVault(id: gistId, token: token)
+            let localVault = vaultService.vault
+            return remoteVault.vaultVersion > localVault.vaultVersion
+                || (remoteVault.updatedAt > localVault.updatedAt && remoteVault != localVault)
         } catch {
             return false
         }
@@ -248,6 +262,19 @@ final class GistSyncService: ObservableObject {
         return content
     }
     
+    private func fetchRemoteVault(id: String, token: String) async throws -> Vault {
+        let content = try await fetchGist(id: id, token: token)
+        guard let data = content.data(using: .utf8) else {
+            throw GistError.invalidContent
+        }
+        
+        do {
+            return try JSONDecoder().decode(Vault.self, from: data)
+        } catch {
+            throw GistError.invalidContent
+        }
+    }
+    
     /// Validate GitHub token
     func validateToken(_ token: String) async -> Bool {
         let url = URL(string: "https://api.github.com/user")!
@@ -276,6 +303,9 @@ enum GistError: LocalizedError {
     case invalidResponse
     case invalidContent
     case remoteNewer
+    case remoteConflict
+    case emptyLocalWouldOverwriteRemote
+    case syncInProgress
     
     var errorDescription: String? {
         switch self {
@@ -293,7 +323,12 @@ enum GistError: LocalizedError {
             return "Invalid vault content in Gist"
         case .remoteNewer:
             return "Remote vault is newer. Please pull first."
+        case .remoteConflict:
+            return "Remote vault has changes. Please pull before pushing."
+        case .emptyLocalWouldOverwriteRemote:
+            return "Local vault is empty, but remote backup has accounts. Please pull first."
+        case .syncInProgress:
+            return "Sync already in progress"
         }
     }
 }
-

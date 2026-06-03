@@ -173,7 +173,7 @@ struct Token: Identifiable, Codable, Equatable {
 }
 
 /// Vault structure containing all tokens and metadata
-struct Vault: Codable {
+struct Vault: Codable, Equatable {
     var tokens: [Token]
     var vaultVersion: Int
     var schemaVersion: Int
