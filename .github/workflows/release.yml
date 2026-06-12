@@ -1,0 +1,326 @@
+# =============================================================================
+# release.yml — Keyden 自动发布工作流
+# =============================================================================
+# 当推送 vX.Y.Z 格式的 tag 时自动触发：
+#   1. 验证 tag 格式 & 版本一致性 (tag ↔ project.pbxproj)
+#   2. 构建 DMG (arm64, x86_64, universal)
+#   3. 创建 GitHub Release 并上传 DMG
+#   4. 更新 homebrew-tap submodule 中的 Cask formula
+#
+# 所需 Secrets:
+#   - HOMEBREW_TAP_TOKEN: 拥有 homebrew-tap 仓库 push 权限的 PAT
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+env:
+  PROJECT_NAME: Keyden
+
+jobs:
+  # ===========================================================================
+  # Job 1: 验证版本一致性
+  # ===========================================================================
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+      tag: ${{ steps.parse.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse and validate tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "🏷️  Tag: ${TAG}"
+
+          # Validate tag format: must be vX.Y.Z (no extra dots)
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Invalid tag format: '${TAG}'"
+            echo "   Expected: vX.Y.Z (e.g. v1.0.10)"
+            echo "   Common mistake: v.1.0.10 (extra dot after v)"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          echo "📦 Version: ${VERSION}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Verify version matches project.pbxproj
+        run: |
+          VERSION="${{ steps.parse.outputs.version }}"
+
+          # Extract MARKETING_VERSION from pbxproj
+          PBXPROJ_VERSION=$(grep -m1 'MARKETING_VERSION' \
+            ${{ env.PROJECT_NAME }}.xcodeproj/project.pbxproj \
+            | sed 's/.*= *\([^;]*\);.*/\1/' | tr -d ' ')
+
+          echo "🔍 Comparing versions..."
+          echo "   Tag version:     ${VERSION}"
+          echo "   pbxproj version: ${PBXPROJ_VERSION}"
+
+          if [ "$VERSION" != "$PBXPROJ_VERSION" ]; then
+            echo ""
+            echo "❌ Version mismatch!"
+            echo "   Tag says '${VERSION}' but project.pbxproj says '${PBXPROJ_VERSION}'"
+            echo "   Please update MARKETING_VERSION in project.pbxproj before tagging."
+            exit 1
+          fi
+
+          echo "✅ Versions match: ${VERSION}"
+
+  # ===========================================================================
+  # Job 2: 构建 DMG
+  # ===========================================================================
+  build:
+    name: Build DMGs
+    needs: validate
+    runs-on: macos-latest
+    outputs:
+      sha256_arm64: ${{ steps.sha.outputs.arm64 }}
+      sha256_x86_64: ${{ steps.sha.outputs.x86_64 }}
+      sha256_universal: ${{ steps.sha.outputs.universal }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          # Use the latest stable Xcode on the runner
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build all DMGs
+        run: |
+          make dmg
+          echo ""
+          echo "📦 Built DMGs:"
+          ls -lh dist/*.dmg
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+
+          SHA_ARM64=$(shasum -a 256 "dist/${{ env.PROJECT_NAME }}-${VERSION}-arm64.dmg" | awk '{print $1}')
+          SHA_X86=$(shasum -a 256 "dist/${{ env.PROJECT_NAME }}-${VERSION}-x86_64.dmg" | awk '{print $1}')
+          SHA_UNI=$(shasum -a 256 "dist/${{ env.PROJECT_NAME }}-${VERSION}-universal.dmg" | awk '{print $1}')
+
+          echo "arm64=${SHA_ARM64}" >> $GITHUB_OUTPUT
+          echo "x86_64=${SHA_X86}" >> $GITHUB_OUTPUT
+          echo "universal=${SHA_UNI}" >> $GITHUB_OUTPUT
+
+          echo "🔑 SHA256 checksums:"
+          echo "   arm64:     ${SHA_ARM64}"
+          echo "   x86_64:    ${SHA_X86}"
+          echo "   universal: ${SHA_UNI}"
+
+      - name: Upload DMG artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg-files
+          path: dist/*.dmg
+          retention-days: 5
+
+  # ===========================================================================
+  # Job 3: 创建 GitHub Release
+  # ===========================================================================
+  release:
+    name: Create Release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download DMG artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dmg-files
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: "${{ env.PROJECT_NAME }} ${{ needs.validate.outputs.tag }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.dmg
+          body: |
+            ## ${{ env.PROJECT_NAME }} ${{ needs.validate.outputs.tag }}
+
+            ### Downloads
+
+            | Platform | File | SHA256 |
+            |----------|------|--------|
+            | Apple Silicon (arm64) | `${{ env.PROJECT_NAME }}-${{ needs.validate.outputs.version }}-arm64.dmg` | `${{ needs.build.outputs.sha256_arm64 }}` |
+            | Intel (x86_64) | `${{ env.PROJECT_NAME }}-${{ needs.validate.outputs.version }}-x86_64.dmg` | `${{ needs.build.outputs.sha256_x86_64 }}` |
+            | Universal | `${{ env.PROJECT_NAME }}-${{ needs.validate.outputs.version }}-universal.dmg` | `${{ needs.build.outputs.sha256_universal }}` |
+
+            ### Install via Homebrew
+
+            ```bash
+            brew install --cask tasselx/tap/keyden
+            ```
+
+  # ===========================================================================
+  # Job 4: 更新 Homebrew Tap (Submodule)
+  # ===========================================================================
+  update-homebrew:
+    name: Update Homebrew Tap
+    needs: [validate, build, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: tasselx/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update Cask formula
+        working-directory: homebrew-tap
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          SHA256_ARM64="${{ needs.build.outputs.sha256_arm64 }}"
+          SHA256_X86="${{ needs.build.outputs.sha256_x86_64 }}"
+          CASK_FILE="Casks/keyden.rb"
+
+          echo "📝 Updating Cask to v${VERSION}..."
+
+          cat > "${CASK_FILE}" << EOF
+          cask "keyden" do
+            version "${VERSION}"
+            arch arm: "arm64", intel: "x86_64"
+
+            sha256 arm:   "${SHA256_ARM64}",
+                   intel: "${SHA256_X86}"
+
+            url "https://github.com/tasselx/Keyden/releases/download/v#{version}/Keyden-#{version}-#{arch}.dmg",
+                verified: "github.com/tasselx/Keyden/"
+            name "Keyden"
+            desc "macOS menu bar TOTP authenticator"
+            homepage "https://tasselx.github.io/Keyden/"
+
+            depends_on macos: :monterey
+
+            app "Keyden.app"
+          end
+          EOF
+
+          # Remove heredoc leading whitespace
+          sed -i 's/^          //' "${CASK_FILE}"
+
+          echo "📄 Updated Cask:"
+          cat "${CASK_FILE}"
+
+      - name: Validate Cask syntax
+        working-directory: homebrew-tap
+        run: ruby -c Casks/keyden.rb
+
+      - name: Verify download URL
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          URL="https://github.com/tasselx/Keyden/releases/download/v${VERSION}/Keyden-${VERSION}-arm64.dmg"
+
+          echo "🔍 Verifying: ${URL}"
+          HTTP_CODE=$(curl -sI -o /dev/null -w "%{http_code}" -L "$URL")
+
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "302" ]; then
+            echo "❌ Download URL not reachable (HTTP ${HTTP_CODE})"
+            exit 1
+          fi
+          echo "✅ Download URL reachable (HTTP ${HTTP_CODE})"
+
+      - name: Commit and push to homebrew-tap
+        working-directory: homebrew-tap
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Casks/keyden.rb
+          if git diff --cached --quiet; then
+            echo "ℹ️  Cask already up to date"
+            exit 0
+          fi
+
+          git commit -m "Update keyden to ${VERSION}"
+          git push
+
+          echo "✅ homebrew-tap updated to v${VERSION}"
+
+      # Update submodule reference in main repo
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          submodules: true
+          path: main-repo
+
+      - name: Update submodule reference
+        working-directory: main-repo
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+
+          # Update submodule to latest
+          git submodule update --remote homebrew-tap || {
+            echo "ℹ️  No homebrew-tap submodule found, skipping submodule update"
+            exit 0
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add homebrew-tap
+          if git diff --cached --quiet; then
+            echo "ℹ️  Submodule reference already up to date"
+            exit 0
+          fi
+
+          git commit -m "chore: update homebrew-tap submodule to v${VERSION}"
+          git push
+
+          echo "✅ Submodule reference updated"
+
+  # ===========================================================================
+  # Job 5: Summary
+  # ===========================================================================
+  summary:
+    name: Release Summary
+    needs: [validate, build, release, update-homebrew]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          TAG="${{ needs.validate.outputs.tag }}"
+
+          echo "## 🎉 Release ${TAG} Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version Validation | ${{ needs.validate.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build DMGs | ${{ needs.build.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${{ needs.release.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Homebrew Tap Update | ${{ needs.update-homebrew.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Checksums" >> $GITHUB_STEP_SUMMARY
+          echo "| Arch | SHA256 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| arm64 | \`${{ needs.build.outputs.sha256_arm64 }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| x86_64 | \`${{ needs.build.outputs.sha256_x86_64 }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| universal | \`${{ needs.build.outputs.sha256_universal }}\` |" >> $GITHUB_STEP_SUMMARY

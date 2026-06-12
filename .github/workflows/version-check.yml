@@ -1,0 +1,208 @@
+# =============================================================================
+# version-check.yml — 版本一致性验证
+# =============================================================================
+# 在每次 push/PR 时自动检查：
+#   1. project.pbxproj 中的 MARKETING_VERSION 格式是否合法 (semver)
+#   2. homebrew-tap submodule 中 Cask 版本是否与项目版本一致
+#   3. Cask 语法是否正确
+#   4. depends_on 格式是否使用了已废弃的字符串比较
+# =============================================================================
+
+name: Version Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.xcodeproj/**'
+      - 'homebrew-tap/**'
+  pull_request:
+    paths:
+      - '*.xcodeproj/**'
+      - 'homebrew-tap/**'
+
+  # 允许手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_NAME: Keyden
+
+jobs:
+  version-check:
+    name: Version Consistency Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # -----------------------------------------------------------------------
+      # Check 1: Validate MARKETING_VERSION format
+      # -----------------------------------------------------------------------
+      - name: Check pbxproj version format
+        id: pbxproj
+        run: |
+          PBXPROJ="${{ env.PROJECT_NAME }}.xcodeproj/project.pbxproj"
+
+          if [ ! -f "$PBXPROJ" ]; then
+            echo "❌ project.pbxproj not found at: ${PBXPROJ}"
+            exit 1
+          fi
+
+          VERSION=$(grep -m1 'MARKETING_VERSION' "$PBXPROJ" \
+            | sed 's/.*= *\([^;]*\);.*/\1/' | tr -d ' ')
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 MARKETING_VERSION: ${VERSION}"
+
+          if [ -z "$VERSION" ]; then
+            echo "❌ MARKETING_VERSION not found in project.pbxproj"
+            exit 1
+          fi
+
+          # Validate semver format
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Invalid version format: '${VERSION}'"
+            echo "   Expected: X.Y.Z (e.g. 1.0.10)"
+            exit 1
+          fi
+
+          echo "✅ Version format valid: ${VERSION}"
+
+      # -----------------------------------------------------------------------
+      # Check 2: Validate Cask version matches (if submodule exists)
+      # -----------------------------------------------------------------------
+      - name: Check Cask version consistency
+        run: |
+          CASK_FILE="homebrew-tap/Casks/keyden.rb"
+          PBXPROJ_VERSION="${{ steps.pbxproj.outputs.version }}"
+
+          if [ ! -f "$CASK_FILE" ]; then
+            echo "ℹ️  homebrew-tap submodule not found, skipping Cask check"
+            echo "   (Expected: ${CASK_FILE})"
+            exit 0
+          fi
+
+          # Extract version from Cask
+          CASK_VERSION=$(grep -oP 'version\s+"[^"]+"' "$CASK_FILE" \
+            | grep -oP '"[^"]+"' | tr -d '"')
+
+          echo "🔍 Comparing versions..."
+          echo "   pbxproj version: ${PBXPROJ_VERSION}"
+          echo "   Cask version:    ${CASK_VERSION}"
+
+          if [ "$PBXPROJ_VERSION" != "$CASK_VERSION" ]; then
+            echo ""
+            echo "⚠️  Version mismatch detected!"
+            echo "   This is expected during development."
+            echo "   The Cask will be auto-updated when you create a release tag."
+            echo ""
+            echo "   If you just released v${PBXPROJ_VERSION}, the Cask should be updated."
+          else
+            echo "✅ Versions are in sync: ${PBXPROJ_VERSION}"
+          fi
+
+      # -----------------------------------------------------------------------
+      # Check 3: Validate Cask syntax
+      # -----------------------------------------------------------------------
+      - name: Check Cask syntax
+        run: |
+          CASK_FILE="homebrew-tap/Casks/keyden.rb"
+
+          if [ ! -f "$CASK_FILE" ]; then
+            echo "ℹ️  Cask file not found, skipping syntax check"
+            exit 0
+          fi
+
+          echo "🔍 Checking Ruby syntax..."
+          ruby -c "$CASK_FILE"
+          echo "✅ Cask syntax OK"
+
+      # -----------------------------------------------------------------------
+      # Check 4: Check for deprecated depends_on format
+      # -----------------------------------------------------------------------
+      - name: Check for deprecated Homebrew patterns
+        run: |
+          CASK_FILE="homebrew-tap/Casks/keyden.rb"
+
+          if [ ! -f "$CASK_FILE" ]; then
+            echo "ℹ️  Cask file not found, skipping deprecation check"
+            exit 0
+          fi
+
+          echo "🔍 Checking for deprecated patterns..."
+
+          FOUND_ISSUES=0
+
+          # Check for deprecated string comparison in depends_on macos
+          if grep -qE 'depends_on\s+macos:\s+"' "$CASK_FILE"; then
+            echo "❌ Deprecated: depends_on macos uses string comparison format"
+            echo "   Found:    $(grep 'depends_on.*macos' "$CASK_FILE" | tr -d ' ')"
+            echo "   Expected: depends_on macos: :monterey  (symbol format)"
+            echo ""
+            echo "   String comparison format is deprecated by Homebrew."
+            echo "   Use symbol format instead: depends_on macos: :monterey"
+            echo "   (Symbol format already implies '>=')"
+            FOUND_ISSUES=1
+          fi
+
+          # Check for invalid tag format in URL (v.X.Y.Z)
+          if grep -qE 'v\.\#\{version\}' "$CASK_FILE"; then
+            echo "❌ Suspicious URL pattern: 'v.#{version}' (extra dot after v)"
+            echo "   Expected: 'v#{version}'"
+            FOUND_ISSUES=1
+          fi
+
+          if [ "$FOUND_ISSUES" = "1" ]; then
+            echo ""
+            echo "❌ Deprecated patterns found! Please fix them."
+            exit 1
+          fi
+
+          echo "✅ No deprecated patterns found"
+
+      # -----------------------------------------------------------------------
+      # Check 5: Validate URL template
+      # -----------------------------------------------------------------------
+      - name: Validate URL template
+        run: |
+          CASK_FILE="homebrew-tap/Casks/keyden.rb"
+
+          if [ ! -f "$CASK_FILE" ]; then
+            echo "ℹ️  Cask file not found, skipping URL check"
+            exit 0
+          fi
+
+          echo "🔍 Checking URL template..."
+
+          # Verify URL uses v#{version} (not v.#{version} or other variants)
+          if grep -q 'download/v#{version}/' "$CASK_FILE"; then
+            echo "✅ URL template uses correct format: v#{version}"
+          elif grep -q 'download/' "$CASK_FILE"; then
+            echo "⚠️  URL template may have non-standard version format"
+            grep 'download/' "$CASK_FILE"
+          fi
+
+          # Verify arch interpolation
+          if grep -q '#{arch}.dmg' "$CASK_FILE"; then
+            echo "✅ URL template uses arch interpolation"
+          fi
+
+      # -----------------------------------------------------------------------
+      # Summary
+      # -----------------------------------------------------------------------
+      - name: Summary
+        if: always()
+        run: |
+          VERSION="${{ steps.pbxproj.outputs.version }}"
+
+          echo "## 🔍 Version Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| MARKETING_VERSION | \`${VERSION}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Format | ✅ Valid semver |" >> $GITHUB_STEP_SUMMARY
